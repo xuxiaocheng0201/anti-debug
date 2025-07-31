@@ -19,6 +19,11 @@ pub fn is_debugger_present() -> bool {
     ret == -1
 }
 
+#[cfg(not(any(target_os = "windows", target_os = "linux", target_os = "macos")))]
+pub fn is_debugger_present() -> bool {
+    false
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
