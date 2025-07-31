@@ -5,6 +5,7 @@
 !/Cargo.lock
 
 !/src
+!/.github
 
 !/README.md
 !/LICENSE-MIT
