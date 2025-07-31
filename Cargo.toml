@@ -1,7 +1,15 @@
 [package]
 name = "anti-debug"
 version = "0.1.0"
+authors = ["xuxiaocheng <2762267080@qq.com>"]
 edition = "2024"
+rust-version = "1.85.0"
+description = "Rust bindings to simple, a SQLite3 fts5 tokenizer which supports Chinese and PinYin."
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/xuxiaocheng0201/anti-debug/"
+documentation = "https://docs.rs/anti-debug/"
+keywords = ["anti-debugging"]
 
 [dependencies]
 windows-sys = { version = "~0.60", features = ["Win32_System_Diagnostics_Debug"] }
