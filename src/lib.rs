@@ -10,7 +10,7 @@ pub fn is_debugger_present() -> bool {
     let Ok(proc) = proc else { return true; };
     let pid = proc.lines().find(|line| line.starts_with("TracerPid:"));
     let Some(pid) = pid else { return true; };
-    !pid.ends_with(" 0")
+    !pid.ends_with("\t0") && !pid.ends_with(" 0")
 }
 
 #[cfg(target_os = "macos")]
