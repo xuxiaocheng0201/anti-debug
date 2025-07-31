@@ -4,3 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+windows-sys = { version = "~0.60", optional = true, features = ["Win32_System_Diagnostics_Debug"] }
+libc = { version = "~0.2", optional = true }
+
+[features]
+default = ["windows", "linux", "macos"]
+
+windows = ["dep:windows-sys"]
+linux = []
+macos = ["dep:libc"]
