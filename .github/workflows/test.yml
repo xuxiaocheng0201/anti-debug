@@ -41,12 +41,12 @@ jobs:
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
           cat output.txt
-          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 1 ] || exit 1
+          [ $(grep "exited normally" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with debugger
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
           cat output.txt
-          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 0 ] || exit 1
+          [ $(grep "exited normally" output.txt -c) -eq 0 ] || exit 1
         env:
           ANTI_DEBUG: 1
 
