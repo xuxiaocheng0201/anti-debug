@@ -27,6 +27,9 @@ jobs:
           cargo build --release --manifest-path ./ci/Cargo.toml
           mv ./ci/target/release/ci ./anti-debug
 
+      - name: Install dependencies
+        run: sudo apt-get install -y gdb
+
       - name: Test disable
         run: ./anti-debug
       - name: Test enable
@@ -74,13 +77,13 @@ jobs:
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug.exe >output.txt 2>&1
           cat output.txt
-          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 1 ] || exit 1
+          [ $(grep "exited normally" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with debugger
         shell: bash
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug.exe >output.txt 2>&1
           cat output.txt
-          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 0 ] || exit 1
+          [ $(grep "exited normally" output.txt -c) -eq 0 ] || exit 1
         env:
           ANTI_DEBUG: 1
 
