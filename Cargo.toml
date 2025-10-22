@@ -11,13 +11,16 @@ repository = "https://github.com/xuxiaocheng0201/anti-debug/"
 documentation = "https://docs.rs/anti-debug/"
 keywords = ["anti-debugging"]
 
-[dependencies]
-cfg-if = "^1.0"
-
 [target.'cfg(target_os = "windows")'.dependencies]
 errno = "~0.3"
 windows-sys = { version = "~0.61", features = ["Win32_System_Diagnostics_Debug", "Win32_System_Threading", "Wdk_System_Threading", "Win32_System_Kernel"] }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+[target.'cfg(target_os = "android")'.dependencies]
+
 [target.'cfg(target_os = "macos")'.dependencies]
 errno = "~0.3"
 libproc = "~0.14"
+
+[features]
+deep-detect = []

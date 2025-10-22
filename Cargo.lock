@@ -15,7 +15,6 @@ dependencies = [
 name = "anti-debug"
 version = "0.1.1"
 dependencies = [
- "cfg-if",
  "errno",
  "libproc",
  "windows-sys",
