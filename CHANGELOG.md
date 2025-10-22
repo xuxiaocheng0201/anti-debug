@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-10-22
+
+### Added
+
+* 实现 `android` 平台的 `is_debugger_present` (与 linux 一致)
+* 添加 `windows` 独有的 `deep-dectet` feature
+
+### Changed
+
+* 优化 `linux`/`macos` 平台检测逻辑
+* 优化 `is_debugger_present` API
+
 ## [0.1.1] - 2025-7-31
 
 ### Changed
@@ -17,4 +29,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-* 实现 windows/linux/macos 平台的 is_debugger_present
+* 实现 `windows`/`linux`/`macos` 平台的 `is_debugger_present`

@@ -7,4 +7,4 @@
 
 # Description
 
-Provide `is_debugger_present` detector for `windows`/`linux`/`macos`.
+Provide `is_debugger_present` detector for `windows`/`linux`/`android`/`macos`.
