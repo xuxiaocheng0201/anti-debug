@@ -12,109 +12,71 @@ env:
   RUST_BACKTRACE: full
 
 jobs:
-  test-linux:
-    name: Test linux-amd64
-    runs-on: ubuntu-latest
+  test:
+    strategy:
+      matrix:
+        os:
+          - name: linux-amd64
+            runner: ubuntu-latest
+            debugger: gdb
+          - name: linux-arm64
+            runner: ubuntu-24.04-arm
+            debugger: gdb
+          - name: windows-amd64
+            runner: windows-latest
+            debugger: gdb
+          - name: windows-arm64
+            runner: windows-11-arm
+            debugger: gdb
+          - name: macos-arm64
+            runner: macos-latest
+            debugger: lldb
+    name: Test ${{ matrix.os.name }} with ${{ matrix.os.debugger }}
+    runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Check rust version
         run: rustup --version
-
       - name: Build bin
         run: |
           cargo build --release --manifest-path ./ci/Cargo.toml
           mv ./ci/target/release/ci ./anti-debug
-
-      - name: Install dependencies
-        run: sudo apt-get install -y gdb
-
+      - name: Install dependencies on linux
+        if: startsWith(matrix.os.name, 'linux')
+        run: |
+          sudo apt update
+          sudo apt-get install -y gdb
       - name: Test disable
         run: ./anti-debug
       - name: Test enable
         run: ./anti-debug
         env:
           ANTI_DEBUG: 1
-
-      - name: Test disable with debugger
+      - name: Test disable with gdb
+        if: matrix.os.debugger == 'gdb'
+        shell: bash
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited normally" output.txt -c) -eq 1 ] || exit 1
-      - name: Test enable with debugger
+      - name: Test enable with gdb
+        if: matrix.os.debugger == 'gdb'
+        shell: bash
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited normally" output.txt -c) -eq 0 ] || exit 1
         env:
           ANTI_DEBUG: 1
-
-  test-windows:
-    name: Test windows-amd64
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check rust version
-        run: rustup --version
-
-      - name: Build bin
-        run: |
-          cargo build --release --manifest-path ./ci/Cargo.toml
-          mv ./ci/target/release/ci.exe ./anti-debug.exe
-
-      - name: Test disable
-        run: ./anti-debug.exe
-      - name: Test enable
-        run: ./anti-debug.exe
-        env:
-          ANTI_DEBUG: 1
-
-      - name: Test disable with debugger
-        shell: bash
-        run: |
-          gdb --batch -ex="run" -ex="quit" ./anti-debug.exe >output.txt 2>&1
-          cat output.txt
-          [ $(grep "exited normally" output.txt -c) -eq 1 ] || exit 1
-      - name: Test enable with debugger
-        shell: bash
-        run: |
-          gdb --batch -ex="run" -ex="quit" ./anti-debug.exe >output.txt 2>&1
-          cat output.txt
-          [ $(grep "exited normally" output.txt -c) -eq 0 ] || exit 1
-        env:
-          ANTI_DEBUG: 1
-
-  test-macos-arm64:
-    name: Test macos-arm64
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Check rust version
-        run: rustup --version
-
-      - name: Build bin
-        run: |
-          cargo build --release --manifest-path ./ci/Cargo.toml
-          mv ./ci/target/release/ci ./anti-debug
-
-      - name: Test disable
-        run: ./anti-debug
-      - name: Test enable
-        run: ./anti-debug
-        env:
-          ANTI_DEBUG: 1
-
-      - name: Test disable with debugger
+      - name: Test disable with lldb
+        if: matrix.os.debugger == 'lldb'
         run: |
           lldb --batch -o "run" -o "quit" -- ./anti-debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 1 ] || exit 1
-      - name: Test enable with debugger
+      - name: Test enable with lldb
+        if: matrix.os.debugger == 'lldb'
         run: |
           lldb --batch -o "run" -o "quit" -- ./anti-debug >output.txt 2>&1
           cat output.txt
