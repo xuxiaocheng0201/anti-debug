@@ -31,6 +31,10 @@ jobs:
           - name: macos-arm64
             runner: macos-latest
             debugger: lldb
+          - name: macos-amd64
+            runner: macos-15-intel
+            debugger: lldb
+      fail-fast: false
     name: Test ${{ matrix.os.name }} with ${{ matrix.os.debugger }}
     runs-on: ${{ matrix.os.runner }}
     steps:
@@ -39,11 +43,15 @@ jobs:
       - name: Check rust version
         run: rustup --version
       - name: Build bin
-        run: |
-          cargo build --release --manifest-path ./ci/Cargo.toml
-          mv ./ci/target/release/ci ./anti-debug
+        run: cargo build --release --manifest-path ./ci/Cargo.toml
+      - name: Move bin
+        if: ${{ !startsWith(matrix.os.name, 'windows') }}
+        run: mv ./ci/target/release/ci ./anti-debug
+      - name: Move bin
+        if: ${{ startsWith(matrix.os.name, 'windows') }}
+        run: mv ./ci/target/release/ci.exe ./anti-debug.exe
       - name: Install dependencies on linux
-        if: startsWith(matrix.os.name, 'linux')
+        if: ${{ startsWith(matrix.os.name, 'linux') }}
         run: |
           sudo apt update
           sudo apt-get install -y gdb
@@ -54,14 +62,14 @@ jobs:
         env:
           ANTI_DEBUG: 1
       - name: Test disable with gdb
-        if: matrix.os.debugger == 'gdb'
+        if: ${{ matrix.os.debugger == 'gdb' }}
         shell: bash
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited normally" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with gdb
-        if: matrix.os.debugger == 'gdb'
+        if: ${{ matrix.os.debugger == 'gdb' }}
         shell: bash
         run: |
           gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
@@ -70,13 +78,13 @@ jobs:
         env:
           ANTI_DEBUG: 1
       - name: Test disable with lldb
-        if: matrix.os.debugger == 'lldb'
+        if: ${{ matrix.os.debugger == 'lldb' }}
         run: |
           lldb --batch -o "run" -o "quit" -- ./anti-debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with lldb
-        if: matrix.os.debugger == 'lldb'
+        if: ${{ matrix.os.debugger == 'lldb' }}
         run: |
           lldb --batch -o "run" -o "quit" -- ./anti-debug >output.txt 2>&1
           cat output.txt
