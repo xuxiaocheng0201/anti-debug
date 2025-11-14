@@ -41,7 +41,7 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
                 return Ok(true);
             }
         }
-       return Ok(false);
+        Ok(false)
     }
     #[cfg(any(target_os = "linux", target_os = "android"))] {
         // Check with `/proc/self/status`.
@@ -57,7 +57,7 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
                 return Ok(true);
             }
         }
-        return Ok(false);
+        Ok(false)
     }
     #[cfg(target_os = "macos")] {
         // Check with `proc_pidinfo`.
@@ -71,7 +71,7 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
             const PROC_FLAG_TRACED: u32 = 2; // use libproc::osx_libproc_bindings::PROC_FLAG_TRACED;
             if proc_bsdinfo.pbi_flags & PROC_FLAG_TRACED != 0 { return Ok(true); }
         }
-        return Ok(false);
+        Ok(false)
     }
     #[cfg(not(any(
         target_os = "windows",

@@ -25,9 +25,9 @@ jobs:
           - name: windows-amd64
             runner: windows-latest
             debugger: gdb
-          - name: windows-arm64
-            runner: windows-11-arm
-            debugger: gdb
+#          - name: windows-arm64
+#            runner: windows-11-arm
+#            debugger: gdb
           - name: macos-arm64
             runner: macos-latest
             debugger: lldb
@@ -43,13 +43,13 @@ jobs:
       - name: Check rust version
         run: rustup --version
       - name: Build bin
-        run: cargo build --release --manifest-path ./ci/Cargo.toml
+        run: cargo build --release --example ci_anti_debug
       - name: Move bin
         if: ${{ !startsWith(matrix.os.name, 'windows') }}
-        run: mv ./ci/target/release/ci ./anti-debug
+        run: mv ./target/release/examples/ci_anti_debug ./anti-debug
       - name: Move bin
         if: ${{ startsWith(matrix.os.name, 'windows') }}
-        run: mv ./ci/target/release/ci.exe ./anti-debug.exe
+        run: mv ./target/release/examples/ci_anti_debug.exe ./anti-debug.exe
       - name: Install dependencies on linux
         if: ${{ startsWith(matrix.os.name, 'linux') }}
         run: |

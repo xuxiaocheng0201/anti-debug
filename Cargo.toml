@@ -24,3 +24,6 @@ libproc = "~0.14"
 
 [features]
 deep-detect = []
+
+[[example]]
+name = "ci_anti_debug"
