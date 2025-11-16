@@ -24,6 +24,11 @@
 /// Returns `Ok(true)` if a debugger is detected, `Ok(false)` if no debugger is present,
 /// or `Err(std::io::Error)` if the check could not be performed due to a system error.
 ///
+/// This function may return an error in the following situations:
+///
+/// - Insufficient permissions to access process information
+/// - Platform-specific system calls fail
+///
 /// # Examples
 ///
 /// ```rust
@@ -66,7 +71,7 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
                 &mut p_debugger_present,
             );
             if result == windows_sys::Win32::Foundation::FALSE {
-                return Err(errno::errno().into());
+                return Err(std::io::Error::last_os_error());
             }
             if p_debugger_present != windows_sys::Win32::Foundation::FALSE {
                 return Ok(true);
@@ -85,7 +90,7 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
             );
             let result = windows_sys::Win32::Foundation::RtlNtStatusToDosError(result);
             if result != 0 {
-                return Err(errno::Errno(result as _).into());
+                return Err(std::io::Error::from_raw_os_error(result as _));
             }
             if p_debug_port != 0 {
                 return Ok(true);
@@ -116,7 +121,7 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
             let result = libproc::proc_pid::pidinfo::<libproc::bsd_info::BSDInfo>(pid, 0);
             let proc_bsdinfo = match result {
                 Ok(proc_bsdinfo) => proc_bsdinfo,
-                Err(_message) => return Err(errno::errno().into()),
+                Err(_message) => return Err(std::io::Error::last_os_error()),
             };
             const PROC_FLAG_TRACED: u32 = 2; // use libproc::osx_libproc_bindings::PROC_FLAG_TRACED;
             if proc_bsdinfo.pbi_flags & PROC_FLAG_TRACED != 0 { return Ok(true); }
