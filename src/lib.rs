@@ -1,3 +1,53 @@
+#![doc = include_str!("../README.md")]
+#![warn(missing_docs)]
+
+/// Checks if a debugger is currently attached to the process.
+///
+/// This function performs a platform-specific check to detect whether a debugger
+/// is actively attached to the current process. This can be useful for implementing
+/// anti-debugging techniques or for adjusting behavior when running under a debugger.
+///
+/// # Platform-specific Behavior
+///
+/// The implementation varies by platform:
+///
+/// - **Windows**: Uses the `IsDebuggerPresent` API. When the `deep-detect` feature
+///   is enabled, additionally checks `CheckRemoteDebuggerPresent` and
+///   `NtQueryInformationProcess` for more comprehensive detection.
+/// - **Linux/Android**: Checks the `TracerPid` field in `/proc/self/status`.
+/// - **macOS**: Uses the `proc_pidinfo` system call to retrieve process BSD info
+///   and checks the `pbi_flags` field.
+/// - **Other platforms**: Compilation error.
+///
+/// # Return Value
+///
+/// Returns `Ok(true)` if a debugger is detected, `Ok(false)` if no debugger is present,
+/// or `Err(std::io::Error)` if the check could not be performed due to a system error.
+///
+/// # Examples
+///
+/// ```rust
+/// # fn main() {
+/// match anti_debug::is_debugger_present() {
+///     Ok(true) => println!("Debugger detected!"),
+///     Ok(false) => println!("No debugger present"),
+///     Err(e) => println!("Error checking for debugger: {}", e),
+/// }
+/// # }
+/// ```
+///
+/// # Notes
+///
+/// - This detection can be bypassed by skilled attackers using advanced anti-anti-debugging techniques
+/// - Some debuggers may not be detected depending on their attachment method
+/// - The check is performed at the moment the function is called and may not reflect
+///   subsequent attachment/detachment of debuggers
+///
+/// # Security Considerations
+///
+/// Do not rely solely on this check for security-critical operations, as determined
+/// attackers can bypass debugger detection. This should be used as one component
+/// of a comprehensive security strategy.
 pub fn is_debugger_present() -> Result<bool, std::io::Error> {
     #[cfg(target_os = "windows")] {
         // Check with `IsDebuggerPresent`.
