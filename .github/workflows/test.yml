@@ -134,12 +134,10 @@ jobs:
         run: ./target/release/examples/ci_deny_attach
         env:
           DEBUGGER: gdb
+          DEBUGGER_SUCCESS: 1
       - name: Test enable with gdb
         if: ${{ matrix.os.debugger == 'gdb' }}
-        shell: bash
-        run: |
-          ./target/release/examples/ci_deny_attach
-          [ $? -eq 101 ] || exit 1
+        run: ./target/release/examples/ci_deny_attach
         env:
           DEBUGGER: gdb
           ANTI_DEBUG: 1
@@ -148,12 +146,10 @@ jobs:
         run: ./target/release/examples/ci_deny_attach
         env:
           DEBUGGER: lldb
+          DEBUGGER_SUCCESS: 1
       - name: Test enable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
-        shell: bash
-        run: |
-          ./target/release/examples/ci_deny_attach
-          [ $? -eq 101 ] || exit 1
+        run: ./target/release/examples/ci_deny_attach
         env:
           DEBUGGER: lldb
           ANTI_DEBUG: 1

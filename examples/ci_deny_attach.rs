@@ -15,7 +15,7 @@ fn main() {
                 ])
                 .spawn().unwrap()
                 .wait().unwrap(),
-            "gdb" => std::process::Command::new("gbd")
+            "gdb" => std::process::Command::new("gdb")
                 .args([
                     "-p", id.to_string().as_str(),
                     "--batch",
@@ -26,6 +26,6 @@ fn main() {
                 .wait().unwrap(),
             _ => panic!("Unknown debugger"),
         };
-        assert!(code.success(), "{code}");
+        assert_eq!(code.success(), std::env::var("DEBUGGER_SUCCESS").is_ok(), "{code}");
     }
 }
