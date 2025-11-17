@@ -3,31 +3,22 @@
 
 /// Checks if a debugger is currently attached to the process.
 ///
-/// This function performs a platform-specific check to detect whether a debugger
-/// is actively attached to the current process. This can be useful for implementing
-/// anti-debugging techniques or for adjusting behavior when running under a debugger.
+/// This function performs platform-specific checks to detect
+/// whether a debugger is actively attached to the current process.
 ///
 /// # Platform-specific Behavior
 ///
-/// The implementation varies by platform:
-///
-/// - **Windows**: Uses the `IsDebuggerPresent` API. When the `deep-detect` feature
-///   is enabled, additionally checks `CheckRemoteDebuggerPresent` and
-///   `NtQueryInformationProcess` for more comprehensive detection.
+/// - **Windows**: Uses `IsDebuggerPresent`.
+///   When the `deep-detect` feature is enabled, additionally checks
+///   `CheckRemoteDebuggerPresent` and `NtQueryInformationProcess`.
 /// - **Linux/Android**: Checks the `TracerPid` field in `/proc/self/status`.
-/// - **macOS**: Uses the `proc_pidinfo` system call to retrieve process BSD info
-///   and checks the `pbi_flags` field.
+/// - **macOS**: Uses `proc_pidinfo` to retrieve `proc_bsdinfo` and checks the `pbi_flags` field.
 /// - **Other platforms**: Compilation error.
 ///
 /// # Return Value
 ///
 /// Returns `Ok(true)` if a debugger is detected, `Ok(false)` if no debugger is present,
 /// or `Err(std::io::Error)` if the check could not be performed due to a system error.
-///
-/// This function may return an error in the following situations:
-///
-/// - Insufficient permissions to access process information
-/// - Platform-specific system calls fail
 ///
 /// # Examples
 ///
@@ -47,12 +38,6 @@
 /// - Some debuggers may not be detected depending on their attachment method
 /// - The check is performed at the moment the function is called and may not reflect
 ///   subsequent attachment/detachment of debuggers
-///
-/// # Security Considerations
-///
-/// Do not rely solely on this check for security-critical operations, as determined
-/// attackers can bypass debugger detection. This should be used as one component
-/// of a comprehensive security strategy.
 pub fn is_debugger_present() -> Result<bool, std::io::Error> {
     #[cfg(target_os = "windows")] {
         // Check with `IsDebuggerPresent`.
@@ -137,6 +122,79 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
     compile_error!("Anti-Debug doesn't support current platform.")
 }
 
+/// Attempts to prevent debuggers from attaching to the current process.
+///
+/// This function implements platform-specific anti-debugging techniques
+/// to deter debugging attempts.
+///
+/// # Platform-specific Behavior
+///
+/// - **Windows**: Uses `NtSetInformationThread` with `ThreadHideFromDebugger`.
+/// - **Linux/Android**: Uses `prctl` to set `PR_SET_PTRACER` to `0`.
+/// - **macOS**: Uses `ptrace` with `PT_DENY_ATTACH`.
+/// - **Other platforms**: Compilation error.
+///
+/// # Return Value
+///
+/// Returns `Ok(())` on success,
+/// or `Err(std::io::Error)` if the operation could not be performed due to a system error.
+///
+/// # Examples
+///
+/// ```rust
+/// # fn main() {
+/// if let Err(e) = anti_debug::deny_attach() {
+///     println!("Debugger protection failed: {}", e);
+/// }
+/// # }
+/// ```
+///
+/// # Notes
+///
+/// - This detection can be bypassed by skilled attackers using advanced anti-anti-debugging techniques
+/// - Some platforms cannot prevent debugger attachment (like windows), but attempt to hide from the debugger.
+pub fn deny_attach() -> Result<(), std::io::Error> {
+    #[cfg(target_os = "windows")] {
+        // Hide with `NtSetInformationThread`.
+        unsafe {
+            let result = windows_sys::Wdk::System::Threading::NtSetInformationThread(
+                windows_sys::Win32::System::Threading::GetCurrentProcess(),
+                windows_sys::Wdk::System::Threading::ThreadHideFromDebugger,
+                std::ptr::null(),
+                0,
+            );
+            let result = windows_sys::Win32::Foundation::RtlNtStatusToDosError(result);
+            if result != 0 { return Err(std::io::Error::from_raw_os_error(result as _)); }
+        }
+        Ok(())
+    }
+    #[cfg(any(target_os = "linux", target_os = "android"))] {
+        // Deny with `prctl`.
+        unsafe {
+            let result = libc::prctl(libc::PR_SET_PTRACER, 0);
+            if result == -1 {
+                return Err(std::io::Error::last_os_error());
+            }
+        }
+        Ok(())
+    }
+    #[cfg(target_os = "macos")] {
+        // Deny with `ptrace`.
+        unsafe {
+            let result = libc::ptrace(libc::PT_DENY_ATTACH, 0, std::ptr::null_mut(), 0);
+            if result == -1 { return Err(std::io::Error::last_os_error()); }
+        }
+        Ok(())
+    }
+    #[cfg(not(any(
+        target_os = "windows",
+        target_os = "linux",
+        target_os = "android",
+        target_os = "macos",
+    )))]
+    compile_error!("Anti-Debug doesn't support current platform.")
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -144,5 +202,12 @@ mod tests {
         assert!(!super::is_debugger_present().unwrap_or(false));
         assert!(!super::is_debugger_present().unwrap_or(false));
         assert!(!super::is_debugger_present().unwrap_or(false));
+    }
+
+    #[test]
+    fn test_deny_attach() {
+        super::deny_attach().unwrap();
+        super::deny_attach().unwrap();
+        super::deny_attach().unwrap();
     }
 }
