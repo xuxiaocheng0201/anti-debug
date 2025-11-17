@@ -12,7 +12,7 @@ env:
   RUST_BACKTRACE: full
 
 jobs:
-  test:
+  test-anti-debug:
     strategy:
       matrix:
         os:
@@ -35,44 +35,38 @@ jobs:
             runner: macos-15-intel
             debugger: lldb
       fail-fast: false
-    name: Test ${{ matrix.os.name }} with ${{ matrix.os.debugger }}
+    name: Test anti-debug on ${{ matrix.os.name }} with ${{ matrix.os.debugger }}
     runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Check rust version
         run: rustup --version
-      - name: Build bin
-        run: cargo build --release --example ci_anti_debug
-      - name: Move bin
-        if: ${{ !startsWith(matrix.os.name, 'windows') }}
-        run: mv ./target/release/examples/ci_anti_debug ./anti-debug
-      - name: Move bin
-        if: ${{ startsWith(matrix.os.name, 'windows') }}
-        run: mv ./target/release/examples/ci_anti_debug.exe ./anti-debug.exe
       - name: Install dependencies on linux
         if: ${{ startsWith(matrix.os.name, 'linux') }}
         run: |
           sudo apt update
           sudo apt-get install -y gdb
+      - name: Build
+        run: cargo build --release --example ci_anti_debug
       - name: Test disable
-        run: ./anti-debug
+        run: ./target/release/examples/ci_anti_debug
       - name: Test enable
-        run: ./anti-debug
+        run: ./target/release/examples/ci_anti_debug
         env:
           ANTI_DEBUG: 1
       - name: Test disable with gdb
         if: ${{ matrix.os.debugger == 'gdb' }}
         shell: bash
         run: |
-          gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
+          gdb --batch -ex="run" -ex="quit" ./target/release/examples/ci_anti_debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited normally" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with gdb
         if: ${{ matrix.os.debugger == 'gdb' }}
         shell: bash
         run: |
-          gdb --batch -ex="run" -ex="quit" ./anti-debug >output.txt 2>&1
+          gdb --batch -ex="run" -ex="quit" ./target/release/examples/ci_anti_debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited normally" output.txt -c) -eq 0 ] || exit 1
         env:
@@ -80,14 +74,86 @@ jobs:
       - name: Test disable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
         run: |
-          lldb --batch -o "run" -o "quit" -- ./anti-debug >output.txt 2>&1
+          lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_anti_debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
         run: |
-          lldb --batch -o "run" -o "quit" -- ./anti-debug >output.txt 2>&1
+          lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_anti_debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 0 ] || exit 1
         env:
+          ANTI_DEBUG: 1
+
+  test-deny-attach:
+    strategy:
+      matrix:
+        os:
+          - name: linux-amd64
+            runner: ubuntu-latest
+            debugger: gdb
+          - name: linux-arm64
+            runner: ubuntu-24.04-arm
+            debugger: gdb
+          - name: windows-amd64
+            runner: windows-latest
+            debugger: gdb
+#          - name: windows-arm64
+#            runner: windows-11-arm
+#            debugger: gdb
+          - name: macos-arm64
+            runner: macos-latest
+            debugger: lldb
+          - name: macos-amd64
+            runner: macos-15-intel
+            debugger: lldb
+      fail-fast: false
+    name: Test deny-attach on ${{ matrix.os.name }} with ${{ matrix.os.debugger }}
+    runs-on: ${{ matrix.os.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check rust version
+        run: rustup --version
+      - name: Install dependencies on linux
+        if: ${{ startsWith(matrix.os.name, 'linux') }}
+        run: |
+          sudo apt update
+          sudo apt-get install -y gdb
+      - name: Build
+        run: cargo build --release --example ci_deny_attach
+      - name: Test disable
+        run: ./target/release/examples/ci_deny_attach
+      - name: Test enable
+        run: ./target/release/examples/ci_deny_attach
+        env:
+          ANTI_DEBUG: 1
+      - name: Test disable with gdb
+        if: ${{ matrix.os.debugger == 'gdb' }}
+        run: ./target/release/examples/ci_deny_attach
+        env:
+          DEBUGGER: gdb
+      - name: Test enable with gdb
+        if: ${{ matrix.os.debugger == 'gdb' }}
+        shell: bash
+        run: |
+          ./target/release/examples/ci_deny_attach
+          [ $? -eq 101 ] || exit 1
+        env:
+          DEBUGGER: gdb
+          ANTI_DEBUG: 1
+      - name: Test disable with lldb
+        if: ${{ matrix.os.debugger == 'lldb' }}
+        run: ./target/release/examples/ci_deny_attach
+        env:
+          DEBUGGER: lldb
+      - name: Test enable with lldb
+        if: ${{ matrix.os.debugger == 'lldb' }}
+        shell: bash
+        run: |
+          ./target/release/examples/ci_deny_attach
+          [ $? -eq 101 ] || exit 1
+        env:
+          DEBUGGER: lldb
           ANTI_DEBUG: 1
