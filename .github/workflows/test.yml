@@ -140,9 +140,9 @@ jobs:
         if: ${{ matrix.os.debugger == 'gdb' }}
         shell: bash
         run: |
-          lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_deny_attach >output.txt 2>&1
+          gdb --batch -ex="run" -ex="quit" ./target/release/examples/ci_deny_attach >output.txt 2>&1
           cat output.txt
-          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 0 ] || exit 1
+          [ $(grep "exited normally" output.txt -c) -eq 0 ] || exit 1
         env:
           ANTI_DEBUG: 1
       - name: Test disable with lldb
