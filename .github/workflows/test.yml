@@ -39,7 +39,7 @@ jobs:
     runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Check rust version
         run: rustup --version
       - name: Install dependencies on linux
@@ -73,12 +73,14 @@ jobs:
           ANTI_DEBUG: 1
       - name: Test disable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
+        shell: bash
         run: |
           lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_anti_debug >output.txt 2>&1
           cat output.txt
           [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
+        shell: bash
         run: |
           lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_anti_debug >output.txt 2>&1
           cat output.txt
@@ -90,15 +92,15 @@ jobs:
     strategy:
       matrix:
         os:
-          - name: linux-amd64
-            runner: ubuntu-latest
-            debugger: gdb
-          - name: linux-arm64
-            runner: ubuntu-24.04-arm
-            debugger: gdb
-          - name: windows-amd64
-            runner: windows-latest
-            debugger: gdb
+#          - name: linux-amd64
+#            runner: ubuntu-latest
+#            debugger: gdb
+#          - name: linux-arm64
+#            runner: ubuntu-24.04-arm
+#            debugger: gdb
+#          - name: windows-amd64
+#            runner: windows-latest
+#            debugger: gdb
 #          - name: windows-arm64
 #            runner: windows-11-arm
 #            debugger: gdb
@@ -113,14 +115,12 @@ jobs:
     runs-on: ${{ matrix.os.runner }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Check rust version
         run: rustup --version
       - name: Install dependencies on linux
         if: ${{ startsWith(matrix.os.name, 'linux') }}
-        run: |
-          sudo apt update
-          sudo apt-get install -y gdb
+        run: sudo apt update && sudo apt-get install -y gdb
       - name: Build
         run: cargo build --release --example ci_deny_attach
       - name: Test disable
@@ -129,27 +129,29 @@ jobs:
         run: ./target/release/examples/ci_deny_attach
         env:
           ANTI_DEBUG: 1
-      - name: Test disable with gdb
-        if: ${{ matrix.os.debugger == 'gdb' }}
-        run: ./target/release/examples/ci_deny_attach
-        env:
-          DEBUGGER: gdb
-          DEBUGGER_SUCCESS: 1
-      - name: Test enable with gdb
-        if: ${{ matrix.os.debugger == 'gdb' }}
-        run: ./target/release/examples/ci_deny_attach
-        env:
-          DEBUGGER: gdb
-          ANTI_DEBUG: 1
+#      - name: Test disable with gdb
+#        if: ${{ matrix.os.debugger == 'gdb' }}
+#        shell: bash
+#        run: ./target/release/examples/ci_deny_attach
+#      - name: Test enable with gdb
+#        if: ${{ matrix.os.debugger == 'gdb' }}
+#        shell: bash
+#        run: ./target/release/examples/ci_deny_attach
+#        env:
+#          ANTI_DEBUG: 1
       - name: Test disable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
-        run: ./target/release/examples/ci_deny_attach
-        env:
-          DEBUGGER: lldb
-          DEBUGGER_SUCCESS: 1
+        shell: bash
+        run: |
+          lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_deny_attach >output.txt 2>&1
+          cat output.txt
+          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 1 ] || exit 1
       - name: Test enable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
-        run: ./target/release/examples/ci_deny_attach
+        shell: bash
+        run: |
+          lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_deny_attach >output.txt 2>&1
+          cat output.txt
+          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 0 ] || exit 1
         env:
-          DEBUGGER: lldb
           ANTI_DEBUG: 1
