@@ -43,7 +43,7 @@ jobs:
       - name: Check rust version
         run: rustup --version
       - name: Install dependencies on linux
-        if: ${{ startsWith(matrix.os.name, 'linux') }}
+        if: ${{ contains(matrix.os.name, 'linux') }}
         run: |
           sudo apt update
           sudo apt-get install -y gdb
@@ -119,7 +119,7 @@ jobs:
       - name: Check rust version
         run: rustup --version
       - name: Install dependencies on linux
-        if: ${{ startsWith(matrix.os.name, 'linux') }}
+        if: ${{ contains(matrix.os.name, 'linux') }}
         run: sudo apt update && sudo apt-get install -y gdb
       - name: Build
         run: cargo build --release --example ci_deny_attach
