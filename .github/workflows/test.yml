@@ -92,15 +92,15 @@ jobs:
     strategy:
       matrix:
         os:
-#          - name: linux-amd64
-#            runner: ubuntu-latest
-#            debugger: gdb
-#          - name: linux-arm64
-#            runner: ubuntu-24.04-arm
-#            debugger: gdb
-#          - name: windows-amd64
-#            runner: windows-latest
-#            debugger: gdb
+          - name: linux-amd64
+            runner: ubuntu-latest
+            debugger: gdb
+          - name: linux-arm64
+            runner: ubuntu-24.04-arm
+            debugger: gdb
+          - name: windows-amd64
+            runner: windows-latest
+            debugger: gdb
 #          - name: windows-arm64
 #            runner: windows-11-arm
 #            debugger: gdb
@@ -129,16 +129,22 @@ jobs:
         run: ./target/release/examples/ci_deny_attach
         env:
           ANTI_DEBUG: 1
-#      - name: Test disable with gdb
-#        if: ${{ matrix.os.debugger == 'gdb' }}
-#        shell: bash
-#        run: ./target/release/examples/ci_deny_attach
-#      - name: Test enable with gdb
-#        if: ${{ matrix.os.debugger == 'gdb' }}
-#        shell: bash
-#        run: ./target/release/examples/ci_deny_attach
-#        env:
-#          ANTI_DEBUG: 1
+      - name: Test disable with gdb
+        if: ${{ matrix.os.debugger == 'gdb' }}
+        shell: bash
+        run: |
+          gdb --batch -ex="run" -ex="quit" ./target/release/examples/ci_deny_attach >output.txt 2>&1
+          cat output.txt
+          [ $(grep "exited normally" output.txt -c) -eq 1 ] || exit 1
+      - name: Test enable with gdb
+        if: ${{ matrix.os.debugger == 'gdb' }}
+        shell: bash
+        run: |
+          lldb --batch -o "run" -o "quit" -- ./target/release/examples/ci_deny_attach >output.txt 2>&1
+          cat output.txt
+          [ $(grep "exited with status = 0 (0x00000000)" output.txt -c) -eq 0 ] || exit 1
+        env:
+          ANTI_DEBUG: 1
       - name: Test disable with lldb
         if: ${{ matrix.os.debugger == 'lldb' }}
         shell: bash

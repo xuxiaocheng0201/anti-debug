@@ -124,20 +124,26 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
 
 /// Attempts to prevent debuggers from attaching to the current process.
 ///
-/// This function implements platform-specific anti-debugging techniques
-/// to deter debugging attempts.
+/// This function performs platform-specific operations to prevent debuggers
+/// from attaching to the current process.
 ///
 /// # Platform-specific Behavior
 ///
-/// - **Windows**: Uses `NtSetInformationThread` with `ThreadHideFromDebugger`.
-/// - **Linux/Android**: Uses `prctl` to set `PR_SET_PTRACER` to `0`.
-/// - **macOS**: Uses `ptrace` with `PT_DENY_ATTACH`.
+/// - **Windows/Linux/Android**: There is no way to prevent the debugger from attaching in the future.
+///   Checks if a debugger is currently attached using [`is_debugger_present`].
+///   If a debugger is detected, returns an error.
+/// - **macOS**: Uses `ptrace` with the `PT_DENY_ATTACH` flag.
 /// - **Other platforms**: Compilation error.
 ///
 /// # Return Value
 ///
-/// Returns `Ok(())` on success,
-/// or `Err(std::io::Error)` if the operation could not be performed due to a system error.
+/// - Returns `Ok(())` if:
+///   - On Windows/Linux/Android: No debugger is currently attached.
+///   - On macOS: The `ptrace(PT_DENY_ATTACH)` call succeeded.
+/// - Returns `Err(std::io::Error)` if:
+///   - On Windows/Linux/Android: A debugger is currently attached.
+///   - On macOS: The `ptrace` system call failed.
+///   - Any platform-specific system call fails.
 ///
 /// # Examples
 ///
@@ -152,29 +158,12 @@ pub fn is_debugger_present() -> Result<bool, std::io::Error> {
 /// # Notes
 ///
 /// - This detection can be bypassed by skilled attackers using advanced anti-anti-debugging techniques
-/// - Some platforms cannot prevent debugger attachment (like windows), but attempt to hide from the debugger.
+/// - Some debuggers may not be detected depending on their attachment method
+/// - On Windows/Linux/Android, this is a detection-based approach. i.e. passive detection
 pub fn deny_attach() -> Result<(), std::io::Error> {
-    #[cfg(target_os = "windows")] {
-        // Hide with `NtSetInformationThread`.
-        unsafe {
-            let result = windows_sys::Wdk::System::Threading::NtSetInformationThread(
-                windows_sys::Win32::System::Threading::GetCurrentProcess(),
-                windows_sys::Wdk::System::Threading::ThreadHideFromDebugger,
-                std::ptr::null(),
-                0,
-            );
-            let result = windows_sys::Win32::Foundation::RtlNtStatusToDosError(result);
-            if result != 0 { return Err(std::io::Error::from_raw_os_error(result as _)); }
-        }
-        Ok(())
-    }
-    #[cfg(any(target_os = "linux", target_os = "android"))] {
-        // Deny with `prctl`.
-        unsafe {
-            let result = libc::prctl(libc::PR_SET_PTRACER, 0);
-            if result == -1 {
-                return Err(std::io::Error::last_os_error());
-            }
+    #[cfg(any(target_os = "windows", target_os = "linux", target_os = "android"))] {
+        if is_debugger_present()? {
+            return Err(std::io::Error::new(std::io::ErrorKind::AlreadyExists, "Debugger present."));
         }
         Ok(())
     }
