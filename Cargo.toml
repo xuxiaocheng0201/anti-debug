@@ -4,7 +4,7 @@ version = "0.2.0"
 authors = ["xuxiaocheng <2762267080@qq.com>"]
 edition = "2024"
 rust-version = "1.85.0"
-description = "An `is_debugger_present` detector for all platforms."
+description = "An `is_debugger_present` detector for common platforms."
 readme = "README.md"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/xuxiaocheng0201/anti-debug/"
@@ -12,7 +12,7 @@ documentation = "https://docs.rs/anti-debug/"
 keywords = ["anti-debugging"]
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "~0.61", features = ["Win32_System_Diagnostics_Debug", "Win32_System_Threading", "Wdk_System_Threading", "Win32_System_Kernel"] }
+windows-sys = { version = "~0.61", features = ["Win32_System_Diagnostics_Debug"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 libc = "~0.2"
@@ -24,4 +24,4 @@ libproc = "~0.14"
 libc = "~0.2"
 
 [features]
-deep-detect = []
+deep-detect = ["windows-sys/Win32_System_Threading", "windows-sys/Wdk_System_Threading", "windows-sys/Win32_System_Kernel"]
